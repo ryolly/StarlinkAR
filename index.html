@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#00121f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Sky Chart AR</title>
+<style>
+  :root{--ui-bg:rgba(10,10,14,.65);--ui-border:rgba(255,255,255,.18);--ui-text:#f1f1f3;--accent:#77c1ff}
+  html,body{margin:0;height:100%;background:#000;color:var(--ui-text);font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+  #app{position:fixed;inset:0;overflow:hidden;background:#000}
+  video#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:none;filter:saturate(1.1) contrast(1.05) brightness(1.02)}
+  canvas#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen}
+  .topbar{position:absolute;top:env(safe-area-inset-top);left:0;right:0;display:flex;gap:8px;padding:10px;justify-content:space-between;align-items:center;pointer-events:none}
+  .chip,button,select,input[type=file]{appearance:none;border:1px solid var(--ui-border);background:rgba(255,255,255,.05);color:var(--ui-text);border-radius:12px;padding:8px 10px;font:inherit}
+  .chip{pointer-events:auto;font-size:12px}
+  button.primary{border-color:rgba(119,193,255,.35);background:linear-gradient(180deg,rgba(119,193,255,.6),rgba(119,193,255,.2));color:#00121f;font-weight:600}
+  .panel{position:absolute;left:0;right:0;bottom:env(safe-area-inset-bottom);padding:12px 10px calc(12px + env(safe-area-inset-bottom));display:grid;gap:8px;background:linear-gradient(180deg,rgba(0,0,0,0) 0,rgba(0,0,0,.3) 30%,rgba(0,0,0,.5) 100%)}
+  .card{border:1px solid var(--ui-border);border-radius:12px;background:var(--ui-bg);padding:10px;backdrop-filter:blur(6px)}
+  .row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin:6px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .muted{opacity:.7;font-size:12px}
+  .hint{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:#d8eaff;text-shadow:0 1px 8px rgba(0,0,0,.55)}
+  .hint .box{max-width:560px;border:1px solid rgba(255,255,255,.35);background:rgba(14,22,28,.45);padding:12px 14px;border-radius:12px;backdrop-filter:blur(3px)}
+</style>
+</head>
+<body>
+<div id="app">
+  <video id="cam" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
+
+  <div class="topbar">
+    <button id="startBtn" class="chip primary">▶️ Avvia AR</button>
+    <div class="chip" id="permStatus">Permessi: —</div>
+    <div class="chip" id="fps">FPS: —</div>
+  </div>
+
+  <div class="hint" id="hint">
+    <div class="box">
+      <h3 style="margin:6px 0 8px 0">Sky Chart AR</h3>
+      <div style="opacity:.95">
+        Carica un <b>cielogramma</b> (immagine all-sky) e premi <b>Avvia AR</b>.<br>
+        Su iPhone funziona perfettamente via <b>GitHub Pages</b> (https). Concedi permessi camera e sensori quando richiesto.
+      </div>
+      <div class="muted" style="margin-top:8px">
+        Suggerimenti: “Rimuovi fondo bianco” evidenzia stelle e la freccia della traiettoria. “Fissa allineamento” calibra azimut/altitudine.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="row">
+        <label for="file">Cielogramma</label>
+        <input type="file" id="file" accept="image/*">
+        <button id="loadSample">Usa esempio</button>
+      </div>
+      <div class="grid2">
+        <button id="bgRemoveBtn">Rimuovi fondo bianco</button>
+        <select id="blend">
+          <option value="screen" selected>Fusione: Screen</option>
+          <option value="multiply">Fusione: Multiply</option>
+          <option value="normal">Fusione: Normale</option>
+          <option value="lighten">Fusione: Lighten</option>
+          <option value="darken">Fusione: Darken</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Opacità</label><input type="range" id="opacity" min="0" max="1" step="0.01" value="0.85"><div id="opacityVal">0.85</div>
+      </div>
+      <div class="row">
+        <label>Scala</label><input type="range" id="scale" min="0.6" max="1.8" step="0.01" value="1"><div id="scaleVal">1.00×</div>
+      </div>
+      <div class="row">
+        <label>Offset azimut</label><input type="range" id="azOffset" min="-180" max="180" step="0.1" value="0"><div id="azVal">0.0°</div>
+      </div>
+      <div class="row">
+        <label>Offset altitudine</label><input type="range" id="altOffset" min="-45" max="45" step="0.1" value="0"><div id="altVal">0.0°</div>
+      </div>
+      <div class="grid2">
+        <button id="fixHere">Fissa allineamento</button>
+        <button id="reset">Reset</button>
+      </div>
+      <div class="muted">Pinch per zoom • due dita per rotazione fine • premi “D” (da desktop) per debug sensori.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+
+(() => { 
+  const video = document.getElementById('cam');
+  const canvas = document.getElementById('overlay');
+  const ctx = canvas.getContext('2d', { alpha: true });
+  const startBtn = document.getElementById('startBtn');
+  const permStatus = document.getElementById('permStatus');
+  const fpsEl = document.getElementById('fps');
+  const hint = document.getElementById('hint');
+  const file = document.getElementById('file');
+  const loadSample = document.getElementById('loadSample');
+  const bgRemoveBtn = document.getElementById('bgRemoveBtn');
+  const blend = document.getElementById('blend');
+  const opacity = document.getElementById('opacity'); const opacityVal = document.getElementById('opacityVal');
+  const scale = document.getElementById('scale'); const scaleVal = document.getElementById('scaleVal');
+  const azOffset = document.getElementById('azOffset'); const azVal = document.getElementById('azVal');
+  const altOffset = document.getElementById('altOffset'); const altVal = document.getElementById('altVal');
+
+  let img=null,imgMasked=null,useMasked=false;
+  let current={heading:0,pitch:0,roll:0,hasCompass:false};
+  let offsets={az:0,alt:0};
+  let user={scale:1,rotationExtra:0};
+  let running=false, rafId=null, lastFrame=performance.now(), fpsS=0;
+
+  function resize(){ const w=canvas.clientWidth,h=canvas.clientHeight; if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h} }
+  window.addEventListener('resize', resize, {passive:true}); resize();
+  function applyUi(){ canvas.style.mixBlendMode=blend.value; canvas.style.opacity=opacity.value;
+    opacityVal.textContent=(+opacity.value).toFixed(2); scaleVal.textContent=user.scale.toFixed(2)+'×';
+    azVal.textContent=offsets.az.toFixed(1)+'°'; altVal.textContent=offsets.alt.toFixed(1)+'°'; }
+  blend.addEventListener('change',applyUi); opacity.addEventListener('input',applyUi);
+  scale.addEventListener('input',e=>{user.scale=+e.target.value;applyUi();});
+  azOffset.addEventListener('input',e=>{offsets.az=+e.target.value;applyUi();});
+  altOffset.addEventListener('input',e=>{offsets.alt=+e.target.value;applyUi();});
+  applyUi();
+
+  async function startAR(){ 
+    await startCamera();
+    const perm=await requestOrientationPermissionIfNeeded();
+    permStatus.textContent='Permessi: '+perm;
+    running=true; hint.style.display='none'; render();
+  }
+  startBtn.addEventListener('click',startAR);
+
+  async function startCamera(){ 
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}}, audio:false});
+    video.srcObject = stream; await video.play();
+    const settings = stream.getVideoTracks()[0]?.getSettings?.()||{};
+    video.style.transform = (settings.facingMode && settings.facingMode.includes('user')) ? 'scaleX(-1)' : 'none';
+  }
+
+  async function requestOrientationPermissionIfNeeded(){ 
+    const E = window.DeviceOrientationEvent;
+    if (E && typeof E.requestPermission === 'function') { 
+      const r = await E.requestPermission(); 
+      if (r !== 'granted') throw new Error('Permesso ai sensori negato');
+      window.addEventListener('deviceorientation', onDeviceOrientation, true);
+      return 'concessi (iOS)';
+    } else { 
+      window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
+      window.addEventListener('deviceorientation', onDeviceOrientation, true);
+      return 'automatici';
+    }
+  }
+  function norm(a){a%=360;if(a<0)a+=360;return a}
+  let lastH=null;
+  function smooth(h){ if(lastH==null){lastH=h;return h} let d=h-lastH; if(d>180)d-=360; if(d<-180)d+=360; lastH=norm(lastH+d*0.15); return lastH; }
+  function onDeviceOrientation(e){ 
+    let heading=null;
+    if(typeof e.webkitCompassHeading==='number'&&!isNaN(e.webkitCompassHeading)){ heading=e.webkitCompassHeading; current.hasCompass=true; }
+    if(heading==null && e.absolute===true && typeof e.alpha==='number'){ heading=360-e.alpha; current.hasCompass=true; }
+    if(heading==null && typeof e.alpha==='number'){ heading=360-e.alpha; current.hasCompass=false; }
+    if(heading!=null) current.heading = norm(smooth(heading + offsets.az));
+    const pitchRaw = (typeof e.beta==='number')?e.beta:0;
+    const rollRaw  = (typeof e.gamma==='number')?e.gamma:0;
+    current.pitch = Math.max(-90, Math.min(90, pitchRaw + offsets.alt));
+    current.roll  = Math.max(-90, Math.min(90, rollRaw));
+  }
+
+  function render(){ if(!running) return; resize(); ctx.clearRect(0,0,canvas.width,canvas.height);
+    const im = (useMasked && imgMasked)?imgMasked:img;
+    if(im){ const w=canvas.width,h=canvas.height,size=Math.min(w,h)*user.scale,cx=w*0.5,cy=h*0.5;
+      ctx.save(); ctx.translate(cx,cy);
+      const rollRad = (current.roll + user.rotationExtra)*Math.PI/180; ctx.rotate(rollRad);
+      const pitchRad = current.pitch*Math.PI/180; const yShift=Math.sin(pitchRad)*h*0.18; const yScale=Math.cos(pitchRad)**0.5; ctx.translate(0,yShift); ctx.scale(1,yScale);
+      const headRad = current.heading*Math.PI/180; ctx.rotate(-headRad);
+      ctx.drawImage(im,-size/2,-size/2,size,size); ctx.restore();
+    }
+    const now=performance.now(), dt=now-lastFrame; lastFrame=now; const fps=1000/dt; fpsS=fpsS*0.9+fps*0.1; fpsEl.textContent='FPS: '+fpsS.toFixed(0);
+    rafId=requestAnimationFrame(render);
+  }
+
+  function blobToDataURL(blob){return new Promise(res=>{const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob);})}
+  async function readFile(f){ const dataUrl = await blobToDataURL(f); const bmp = await createImageBitmap(await (await fetch(dataUrl)).blob()); img=bmp; useMasked=false; imgMasked=null; bgRemoveBtn.textContent='Rimuovi fondo bianco'; hint.style.display='none'; }
+  file.addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(f) await readFile(f); });
+  loadSample.addEventListener('click', async()=>{ const bmp = await createImageBitmap(await (await fetch('sample-skychart.jpg')).blob()); img=bmp; useMasked=false; imgMasked=null; hint.style.display='none'; });
+
+  async function removeWhiteBackground(){ if(!img) return;
+    const off=new OffscreenCanvas(img.width,img.height); const o=off.getContext('2d',{willReadFrequently:true});
+    o.drawImage(img,0,0); const d=o.getImageData(0,0,off.width,off.height); const a=d.data;
+    for(let i=0;i<a.length;i+=4){ const r=a[i],g=a[i+1],b=a[i+2]; const max=Math.max(r,g,b),min=Math.min(r,g,b); const bright=(r+g+b)/3;
+      if(bright>240 && (max-min)<10) a[i+3]=0; else { a[i]=Math.max(0,r-10); a[i+1]=Math.max(0,g-10); a[i+2]=Math.max(0,b-10); a[i+3]=Math.min(255,a[i+3]+20); }
+    }
+    o.putImageData(d,0,0);
+    imgMasked = await createImageBitmap(off.transferToImageBitmap? off.transferToImageBitmap() : await off.convertToBlob());
+    useMasked=true;
+  }
+  bgRemoveBtn.addEventListener('click', async()=>{ if(!img) return alert('Carica prima un’immagine.');
+    if(!useMasked){ bgRemoveBtn.textContent='Elaborazione…'; await removeWhiteBackground(); bgRemoveBtn.textContent='Sfondo rimosso ✔︎'; }
+    else { useMasked=false; bgRemoveBtn.textContent='Rimuovi fondo bianco'; }
+  });
+
+  document.getElementById('fixHere').addEventListener('click',()=>{ offsets.az -= current.heading||0; offsets.alt -= current.pitch||0; 
+    document.getElementById('azOffset').value=offsets.az.toFixed(1); document.getElementById('altOffset').value=offsets.alt.toFixed(1); applyUi(); });
+  document.getElementById('reset').addEventListener('click',()=>{ user.scale=1; scale.value=1; offsets.az=0; azOffset.value=0; offsets.alt=0; altOffset.value=0; user.rotationExtra=0; applyUi(); });
+})();
+</script>
+</body>
+</html>
