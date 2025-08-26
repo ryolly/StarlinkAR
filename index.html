@@ -11,7 +11,7 @@
 <title>Sky Chart AR</title>
 <style>
   :root{
-    --ui-bg: rgba(10,10,14,.65);
+    --ui-bg: rgba(10,10,14,.68);
     --ui-border: rgba(255,255,255,.18);
     --ui-text: #f1f1f3;
     --accent: #77c1ff;
@@ -25,15 +25,16 @@
     font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; overscroll-behavior:none; -webkit-user-select:none; user-select:none; touch-action:manipulation; }
   #app { position:fixed; inset:0; height: calc(var(--vh) * 100); overflow:hidden; background:#000; }
   video#cam { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
-  canvas#overlay { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; image-rendering:auto; mix-blend-mode:multiply; z-index:5; }
-  .topbar { position:absolute; top:var(--pad-y); left:var(--pad-x); right:var(--pad-r); display:flex; gap:8px; align-items:center; justify-content:space-between; z-index:6; pointer-events:none;}
+  canvas#overlay { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:multiply; z-index:2; }
+  .topbar { position:absolute; top:var(--pad-y); left:var(--pad-x); right:var(--pad-r);
+    display:flex; gap:8px; align-items:center; justify-content:space-between; z-index:5; pointer-events:none; }
   .chip, button, select, input[type="file"], input[type="checkbox"] { appearance:none; border:1px solid var(--ui-border); background:rgba(255,255,255,.06); color:var(--ui-text); border-radius:12px; padding:8px 10px; font:inherit; }
   .chip { pointer-events:auto; font-size:12px; }
   button.primary { border-color:rgba(119,193,255,.35); background:linear-gradient(180deg, rgba(119,193,255,.6), rgba(119,193,255,.2)); color:#00121f; font-weight:600; }
   button { cursor:pointer; }
-  .panel { position:absolute; left:var(--pad-x); right:var(--pad-r); bottom:var(--pad-b); z-index:7; padding-bottom:0; }
+  .panel { position:absolute; left:var(--pad-x); right:var(--pad-r); bottom:var(--pad-b); z-index:6; padding-bottom:0; }
   .card { border:1px solid var(--ui-border); border-radius:12px; background:var(--ui-bg); backdrop-filter:blur(6px);
-    padding:10px; max-height:min(52vh,440px); overflow:auto; transform:translateZ(0); }
+    padding:10px; max-height:min(52vh,460px); overflow:auto; transform:translateZ(0); }
   .row { display:grid; grid-template-columns:1fr; gap:8px; align-items:center; margin:6px 0; }
   .row.inline { grid-template-columns:auto 1fr auto; }
   .grid2 { display:grid; grid-template-columns:1fr; gap:8px; }
@@ -41,6 +42,9 @@
   .muted { opacity:.7; font-size:12px; }
   .hint { position:absolute; inset:0; display:grid; place-items:center; text-align:center; pointer-events:none; padding:16px; color:#d8eaff; text-shadow:0 1px 8px rgba(0,0,0,.55); z-index:3; }
   .hint .box { max-width:560px; border:1px solid rgba(255,255,255,.35); background:rgba(14,22,28,.45); padding:10px 12px; border-radius:12px; backdrop-filter:blur(3px); }
+  .status { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .thumb { width:64px; height:64px; border:1px solid var(--ui-border); border-radius:10px; overflow:hidden; background:#111; display:grid; place-items:center; }
+  .thumb img { width:100%; height:100%; object-fit:contain; }
   @media (min-width: 520px) { .grid2{grid-template-columns:1fr 1fr;} .row.inline{grid-template-columns:auto 1fr auto;} }
 </style>
 </head>
@@ -51,25 +55,39 @@
 
   <div class="topbar">
     <button id="startBtn" class="chip primary">▶️ Avvia AR</button>
-    <div class="chip" id="permStatus">Permessi: —</div>
-    <div class="chip" id="fps">FPS: —</div>
+    <div class="status">
+      <div class="chip" id="permStatus">Permessi: —</div>
+      <div class="chip" id="imgStatus">Immagine: —</div>
+      <div class="chip" id="fps">FPS: —</div>
+    </div>
   </div>
 
   <div class="hint" id="hint">
     <div class="box">
       <h3 style="margin:6px 0 8px 0">Sky Chart AR</h3>
       <div style="opacity:.95">
-        Carica un <b>cielogramma</b> e premi <b>Avvia AR</b>. <br>Per linee scure su sfondo chiaro usa <b>Fusione: Multiply</b> (default). Per linee chiare, prova <b>Screen</b> o <b>Inverti colori</b>.
+        1) Scegli l'immagine → premi <b>Carica</b>.<br>
+        2) <b>Avvia AR</b> e consenti i permessi.<br>
+        3) Usa <b>Rimuovi fondo bianco</b> e mantieni <b>Multiply</b> oppure <b>Inverti + Screen</b> per stelle bianche.
       </div>
     </div>
   </div>
 
   <div class="panel">
     <div class="card">
-      <div class="row inline">
-        <label for="file">Cielogramma</label>
-        <input type="file" id="file" accept="image/*">
-        <button id="loadSample">Usa esempio</button>
+      <div class="row">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div class="thumb"><img id="thumb" alt=""></div>
+          <div style="display:grid;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input type="file" id="file" accept="image/*">
+              <button id="loadBtn">Carica</button>
+              <button id="loadSample">Usa esempio</button>
+              <button id="clearImg">Rimuovi immagine</button>
+            </div>
+            <div class="muted" id="imgInfo">Nessuna immagine.</div>
+          </div>
+        </div>
       </div>
 
       <div class="grid2">
@@ -105,7 +123,7 @@
         <button id="fixHere">Fissa allineamento</button>
         <button id="reset">Reset</button>
       </div>
-      <div class="muted">Suggerimento: con mappa in bianco e nero attiva “Rimuovi fondo bianco” e tieni “Multiply”. Se vuoi stelle bianche, usa “Inverti colori” + “Screen”.</div>
+      <div class="muted" id="err"></div>
     </div>
   </div>
 </div>
@@ -113,10 +131,9 @@
 <script>
 function setVh(){ document.documentElement.style.setProperty('--vh', (window.innerHeight*0.01)+'px'); }
 window.addEventListener('resize', setVh); setVh();
-
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js')); }
 
-(() => { 
+(() => {
   const video = document.getElementById('cam');
   const canvas = document.getElementById('overlay');
   const ctx = canvas.getContext('2d', { alpha: true });
@@ -125,7 +142,9 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', () => naviga
   const fpsEl = document.getElementById('fps');
   const hint = document.getElementById('hint');
   const file = document.getElementById('file');
+  const loadBtn = document.getElementById('loadBtn');
   const loadSample = document.getElementById('loadSample');
+  const clearImg = document.getElementById('clearImg');
   const bgRemoveBtn = document.getElementById('bgRemoveBtn');
   const blend = document.getElementById('blend');
   const opacity = document.getElementById('opacity'); const opacityVal = document.getElementById('opacityVal');
@@ -135,12 +154,17 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', () => naviga
   const invert = document.getElementById('invert');
   const grid = document.getElementById('grid');
   const autofit = document.getElementById('autofit');
+  const imgStatus = document.getElementById('imgStatus');
+  const imgInfo = document.getElementById('imgInfo');
+  const thumb = document.getElementById('thumb');
+  const err = document.getElementById('err');
 
-  let img=null,imgMasked=null,useMasked=false, inverted=false;
+  let img=null,imgMasked=null,useMasked=false;
   let current={heading:0,pitch:0,roll:0,hasCompass:false};
   let offsets={az:0,alt:0};
   let user={scale:1,rotationExtra:0};
   let running=false, rafId=null, lastFrame=performance.now(), fpsS=0;
+  let pendingFile=null;
 
   function resize(){ const w=canvas.clientWidth,h=canvas.clientHeight; if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h} }
   window.addEventListener('resize', resize, {passive:true}); resize();
@@ -152,7 +176,6 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', () => naviga
   scale.addEventListener('input',e=>{user.scale=+e.target.value;applyUi();});
   azOffset.addEventListener('input',e=>{offsets.az=+e.target.value;applyUi();});
   altOffset.addEventListener('input',e=>{offsets.alt=+e.target.value;applyUi();});
-  [invert, grid].forEach(el=> el.addEventListener('change', ()=>{}));
   applyUi();
 
   async function startAR(){ 
@@ -207,62 +230,64 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', () => naviga
       const rollRad = (current.roll + user.rotationExtra)*Math.PI/180; ctx.rotate(rollRad);
       const pitchRad = current.pitch*Math.PI/180; const yShift=Math.sin(pitchRad)*h*0.18; const yScale=Math.cos(pitchRad)**0.5; ctx.translate(0,yShift); ctx.scale(1,yScale);
       const headRad = current.heading*Math.PI/180; ctx.rotate(-headRad);
-      // Optional color inversion at draw-time using 'difference' with white
-      if (invert.checked){ ctx.save(); ctx.globalCompositeOperation='difference'; ctx.fillStyle='#fff'; ctx.fillRect(-size/2,-size/2,size,size); ctx.restore(); }
       ctx.drawImage(im,-size/2,-size/2,size,size);
       ctx.restore();
     }
     if(grid.checked){
-      const w=canvas.width,h=canvas.height;
-      ctx.save(); ctx.strokeStyle='rgba(0,200,255,.6)'; ctx.lineWidth=1.5;
+      const w=canvas.width,h=canvas.height; ctx.save(); ctx.strokeStyle='rgba(0,200,255,.6)'; ctx.lineWidth=1.5;
       ctx.beginPath(); ctx.arc(w/2,h/2, Math.min(w,h)/2.6, 0, Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
-      ctx.restore();
+      ctx.beginPath(); ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke(); ctx.restore();
     }
     const now=performance.now(), dt=now-lastFrame; lastFrame=now; const fps=1000/dt; fpsS=fpsS*0.9+fps*0.1; fpsEl.textContent='FPS: '+fpsS.toFixed(0);
-    rafId=requestAnimationFrame(render);
+    requestAnimationFrame(render);
   }
 
-  // Image loading compatible with iOS Safari
-  function loadImageFromBlob(blob){
-    return new Promise((resolve, reject) => {
-      const imgEl = new Image();
-      imgEl.onload = () => resolve(imgEl);
-      imgEl.onerror = reject;
-      imgEl.src = URL.createObjectURL(blob);
-    });
-  }
-  file.addEventListener('change', async e=>{
-    const f=e.target.files?.[0]; if(!f) return;
-    const image = await loadImageFromBlob(f);
-    img=image; useMasked=false; imgMasked=null; bgRemoveBtn.textContent='Rimuovi fondo bianco'; hint.style.display='none';
-  });
+  // ----- Explicit image load flow -----
+  file.addEventListener('change', () => { pendingFile = file.files?.[0] || null; updatePendingInfo(); });
+  loadBtn.addEventListener('click', async () => { if(!pendingFile) { return setErr('Seleziona prima un file.'); } await loadFromBlob(pendingFile); });
   loadSample.addEventListener('click', async()=>{
-    const resp = await fetch('sample-skychart.jpg'); const blob = await resp.blob();
-    const image = await loadImageFromBlob(blob);
-    img=image; useMasked=false; imgMasked=null; hint.style.display='none';
+    try{
+      const resp = await fetch('sample-skychart.jpg'); const blob = await resp.blob(); await loadFromBlob(blob);
+    }catch(e){ setErr('Impossibile caricare l\'esempio.'); }
   });
+  clearImg.addEventListener('click', ()=>{ img=imgMasked=null; useMasked=false; pendingFile=null; thumb.src=''; imgInfo.textContent='Nessuna immagine.'; imgStatus.textContent='Immagine: —'; });
 
-  async function removeWhiteBackground(){ if(!img) return;
+  function updatePendingInfo(){
+    if(!pendingFile){ imgInfo.textContent='Nessuna immagine.'; return; }
+    imgInfo.textContent = `${pendingFile.name} • ${(pendingFile.size/1024).toFixed(0)} KB • ${pendingFile.type||'unknown'}`;
+    try{ thumb.src = URL.createObjectURL(pendingFile); } catch(e){}
+  }
+  function setErr(t){ err.textContent=t||''; if(t) console.warn(t); }
+  function setLoadedInfo(el){
+    const w = el.naturalWidth || el.width, h = el.naturalHeight || el.height;
+    imgInfo.textContent = `Caricata: ${w}×${h}px`; imgStatus.textContent='Immagine: OK';
+    setErr('');
+  }
+  async function loadFromBlob(blob){
+    // Try objectURL first
+    let imgEl = await new Promise((resolve, reject) => { const im=new Image(); im.onload=()=>resolve(im); im.onerror=reject; im.src=URL.createObjectURL(blob); });
+    // If decoded but zero size, fallback to dataURL
+    if(!(imgEl.naturalWidth||imgEl.width)){ const data = await blobToDataURL(blob); imgEl = await new Promise((resolve, reject)=>{ const im=new Image(); im.onload=()=>resolve(im); im.onerror=reject; im.src=data; }); }
+    img = imgEl; useMasked=false; imgMasked=null; bgRemoveBtn.textContent='Rimuovi fondo bianco';
+    thumb.src = imgEl.src; setLoadedInfo(imgEl); hint.style.display='none';
+  }
+  function blobToDataURL(blob){ return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); }); }
+
+  // Background removal
+  async function removeWhiteBackground(){ if(!img) { setErr('Carica prima un\'immagine.'); return; }
     const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
     const off = (typeof OffscreenCanvas !== 'undefined') ? new OffscreenCanvas(w, h) : (function(){ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; })();
     const o = off.getContext('2d', { willReadFrequently: true });
     o.drawImage(img,0,0,w,h);
     const d=o.getImageData(0,0,w,h); const a=d.data;
     for(let i=0;i<a.length;i+=4){ const r=a[i],g=a[i+1],b=a[i+2]; const max=Math.max(r,g,b),min=Math.min(r,g,b); const bright=(r+g+b)/3;
-      if(bright>240 && (max-min)<10) a[i+3]=0; else { a[i]=Math.max(0,r-10); a[i+1]=Math.max(0,g-10); a[i+2]=Math.max(0,b-10); a[i+3]=Math.min(255,a[i+3]+20); }
-    }
+      if(bright>240 && (max-min)<10) a[i+3]=0; }
     o.putImageData(d,0,0);
-    const dataURL = off.convertToBlob ? URL.createObjectURL(await off.convertToBlob()) : off.toDataURL();
-    imgMasked = await new Promise((resolve, reject) => { const el = new Image(); el.onload=()=>resolve(el); el.onerror=reject; el.src=dataURL; });
-    useMasked=true;
-    // dopo sfondo rimosso, forziamo multiply (linee scure visibili)
-    blend.value='multiply'; canvas.style.mixBlendMode='multiply';
+    const url = off.convertToBlob ? URL.createObjectURL(await off.convertToBlob()) : off.toDataURL();
+    imgMasked = await new Promise((resolve, reject) => { const el=new Image(); el.onload=()=>resolve(el); el.onerror=reject; el.src=url; });
+    useMasked=true; canvas.style.mixBlendMode = 'multiply'; blend.value='multiply';
   }
-  bgRemoveBtn.addEventListener('click', async()=>{ if(!img) return alert('Carica prima un’immagine.');
-    if(!useMasked){ bgRemoveBtn.textContent='Elaborazione…'; await removeWhiteBackground(); bgRemoveBtn.textContent='Sfondo rimosso ✔︎'; }
-    else { useMasked=false; bgRemoveBtn.textContent='Rimuovi fondo bianco'; }
-  });
+  bgRemoveBtn.addEventListener('click', async()=>{ await removeWhiteBackground(); });
 
   document.getElementById('fixHere').addEventListener('click',()=>{ offsets.az -= current.heading||0; offsets.alt -= current.pitch||0; 
     document.getElementById('azOffset').value=offsets.az.toFixed(1); document.getElementById('altOffset').value=offsets.alt.toFixed(1); applyUi(); });
