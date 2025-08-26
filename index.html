@@ -15,79 +15,33 @@
     --ui-border: rgba(255,255,255,.18);
     --ui-text: #f1f1f3;
     --accent: #77c1ff;
-    --vh: 1vh; /* set via JS to fix iOS toolbar */
+    --vh: 1vh;
     --pad-x: max(10px, env(safe-area-inset-left));
     --pad-y: max(10px, env(safe-area-inset-top));
     --pad-r: max(10px, env(safe-area-inset-right));
     --pad-b: max(12px, env(safe-area-inset-bottom));
   }
-  html, body {
-    margin: 0;
-    height: 100%;
-    background:#000;
-    color: var(--ui-text);
-    font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
-    overscroll-behavior: none;
-    -webkit-user-select: none;
-    user-select: none;
-    touch-action: manipulation;
-  }
-  #app {
-    position: fixed;
-    inset: 0;
-    height: calc(var(--vh) * 100);
-    overflow: hidden;
-    background:#000;
-  }
-  video#cam { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
-  canvas#overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; image-rendering: auto; mix-blend-mode: screen; z-index: 1; }
-  .topbar {
-    position: absolute;
-    top: var(--pad-y);
-    left: var(--pad-x);
-    right: var(--pad-r);
-    display: flex; gap: 8px; align-items: center; justify-content: space-between;
-    z-index: 3; pointer-events: none;
-  }
-  .chip, button, select, input[type="file"] {
-    appearance: none; border: 1px solid var(--ui-border);
-    background: rgba(255,255,255,.06); color: var(--ui-text);
-    border-radius: 12px; padding: 8px 10px; font: inherit;
-  }
-  .chip { pointer-events: auto; font-size: 12px; }
-  button.primary { border-color: rgba(119,193,255,.35);
-    background: linear-gradient(180deg, rgba(119,193,255,.6), rgba(119,193,255,.2)); color: #00121f; font-weight: 600; }
-  button { cursor: pointer; }
-  .panel {
-    position: absolute; left: var(--pad-x); right: var(--pad-r);
-    bottom: var(--pad-b);
-    z-index: 4;
-    padding-bottom: 0;
-  }
-  .card {
-    border: 1px solid var(--ui-border); border-radius: 12px;
-    background: var(--ui-bg);
-    backdrop-filter: blur(6px);
-    padding: 10px;
-    max-height: min(50vh, 400px);
-    overflow: auto;
-    transform: translateZ(0);
-  }
-  .row { display: grid; grid-template-columns: 1fr; gap: 8px; align-items: center; margin: 6px 0; }
-  .row.inline { grid-template-columns: auto 1fr auto; }
-  .grid2 { display: grid; grid-template-columns: 1fr; gap: 8px; }
-  .muted { opacity: .7; font-size: 12px; }
-  .hint {
-    position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none;
-    padding: 16px; color: #d8eaff; text-shadow: 0 1px 8px rgba(0,0,0,.55); z-index: 2;
-  }
-  .hint .box { max-width: 560px; border: 1px solid rgba(255,255,255,.35); background: rgba(14,22,28,.45);
-    padding: 10px 12px; border-radius: 12px; backdrop-filter: blur(3px); }
-  @media (min-width: 500px) {
-    .row.inline { grid-template-columns: auto 1fr auto; }
-    .grid2 { grid-template-columns: 1fr 1fr; }
-    .card { max-height: 52vh; }
-  }
+  html, body { margin:0; height:100%; background:#000; color:var(--ui-text);
+    font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; overscroll-behavior:none; -webkit-user-select:none; user-select:none; touch-action:manipulation; }
+  #app { position:fixed; inset:0; height: calc(var(--vh) * 100); overflow:hidden; background:#000; }
+  video#cam { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+  canvas#overlay { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; image-rendering:auto; mix-blend-mode:multiply; z-index:5; }
+  .topbar { position:absolute; top:var(--pad-y); left:var(--pad-x); right:var(--pad-r); display:flex; gap:8px; align-items:center; justify-content:space-between; z-index:6; pointer-events:none;}
+  .chip, button, select, input[type="file"], input[type="checkbox"] { appearance:none; border:1px solid var(--ui-border); background:rgba(255,255,255,.06); color:var(--ui-text); border-radius:12px; padding:8px 10px; font:inherit; }
+  .chip { pointer-events:auto; font-size:12px; }
+  button.primary { border-color:rgba(119,193,255,.35); background:linear-gradient(180deg, rgba(119,193,255,.6), rgba(119,193,255,.2)); color:#00121f; font-weight:600; }
+  button { cursor:pointer; }
+  .panel { position:absolute; left:var(--pad-x); right:var(--pad-r); bottom:var(--pad-b); z-index:7; padding-bottom:0; }
+  .card { border:1px solid var(--ui-border); border-radius:12px; background:var(--ui-bg); backdrop-filter:blur(6px);
+    padding:10px; max-height:min(52vh,440px); overflow:auto; transform:translateZ(0); }
+  .row { display:grid; grid-template-columns:1fr; gap:8px; align-items:center; margin:6px 0; }
+  .row.inline { grid-template-columns:auto 1fr auto; }
+  .grid2 { display:grid; grid-template-columns:1fr; gap:8px; }
+  .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .muted { opacity:.7; font-size:12px; }
+  .hint { position:absolute; inset:0; display:grid; place-items:center; text-align:center; pointer-events:none; padding:16px; color:#d8eaff; text-shadow:0 1px 8px rgba(0,0,0,.55); z-index:3; }
+  .hint .box { max-width:560px; border:1px solid rgba(255,255,255,.35); background:rgba(14,22,28,.45); padding:10px 12px; border-radius:12px; backdrop-filter:blur(3px); }
+  @media (min-width: 520px) { .grid2{grid-template-columns:1fr 1fr;} .row.inline{grid-template-columns:auto 1fr auto;} }
 </style>
 </head>
 <body>
@@ -105,10 +59,7 @@
     <div class="box">
       <h3 style="margin:6px 0 8px 0">Sky Chart AR</h3>
       <div style="opacity:.95">
-        Carica un <b>cielogramma</b> (immagine all-sky) e premi <b>Avvia AR</b>. Su iPhone usa HTTPS (GitHub Pages).
-      </div>
-      <div class="muted" style="margin-top:8px">
-        “Rimuovi fondo bianco” evidenzia stelle e la freccia della traiettoria. “Fissa allineamento” calibra.
+        Carica un <b>cielogramma</b> e premi <b>Avvia AR</b>. <br>Per linee scure su sfondo chiaro usa <b>Fusione: Multiply</b> (default). Per linee chiare, prova <b>Screen</b> o <b>Inverti colori</b>.
       </div>
     </div>
   </div>
@@ -120,21 +71,29 @@
         <input type="file" id="file" accept="image/*">
         <button id="loadSample">Usa esempio</button>
       </div>
+
       <div class="grid2">
         <button id="bgRemoveBtn">Rimuovi fondo bianco</button>
         <select id="blend">
-          <option value="screen" selected>Fusione: Screen</option>
-          <option value="multiply">Fusione: Multiply</option>
+          <option value="multiply" selected>Fusione: Multiply (linee scure)</option>
           <option value="normal">Fusione: Normale</option>
+          <option value="screen">Fusione: Screen (linee chiare)</option>
           <option value="lighten">Fusione: Lighten</option>
           <option value="darken">Fusione: Darken</option>
         </select>
       </div>
+
+      <div class="grid3">
+        <label class="chip" style="display:flex;align-items:center;gap:8px;"><input id="invert" type="checkbox" style="width:18px;height:18px;border-radius:6px;"> Inverti colori</label>
+        <label class="chip" style="display:flex;align-items:center;gap:8px;"><input id="grid" type="checkbox" style="width:18px;height:18px;border-radius:6px;"> Reticolo test</label>
+        <label class="chip" style="display:flex;align-items:center;gap:8px;"><input id="autofit" type="checkbox" checked style="width:18px;height:18px;border-radius:6px;"> Auto-fit</label>
+      </div>
+
       <div class="row inline">
-        <label>Opacità</label><input type="range" id="opacity" min="0" max="1" step="0.01" value="0.85"><div id="opacityVal">0.85</div>
+        <label>Opacità</label><input type="range" id="opacity" min="0" max="1" step="0.01" value="0.92"><div id="opacityVal">0.92</div>
       </div>
       <div class="row inline">
-        <label>Scala</label><input type="range" id="scale" min="0.6" max="1.8" step="0.01" value="1"><div id="scaleVal">1.00×</div>
+        <label>Scala</label><input type="range" id="scale" min="0.6" max="2.0" step="0.01" value="1"><div id="scaleVal">1.00×</div>
       </div>
       <div class="row inline">
         <label>Offset azimut</label><input type="range" id="azOffset" min="-180" max="180" step="0.1" value="0"><div id="azVal">0.0°</div>
@@ -146,7 +105,7 @@
         <button id="fixHere">Fissa allineamento</button>
         <button id="reset">Reset</button>
       </div>
-      <div class="muted">Pinch per zoom • due dita per rotazione fine • con Safari la UI è ottimizzata per non uscire dallo schermo.</div>
+      <div class="muted">Suggerimento: con mappa in bianco e nero attiva “Rimuovi fondo bianco” e tieni “Multiply”. Se vuoi stelle bianche, usa “Inverti colori” + “Screen”.</div>
     </div>
   </div>
 </div>
@@ -155,9 +114,7 @@
 function setVh(){ document.documentElement.style.setProperty('--vh', (window.innerHeight*0.01)+'px'); }
 window.addEventListener('resize', setVh); setVh();
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
-}
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js')); }
 
 (() => { 
   const video = document.getElementById('cam');
@@ -175,8 +132,11 @@ if ('serviceWorker' in navigator) {
   const scale = document.getElementById('scale'); const scaleVal = document.getElementById('scaleVal');
   const azOffset = document.getElementById('azOffset'); const azVal = document.getElementById('azVal');
   const altOffset = document.getElementById('altOffset'); const altVal = document.getElementById('altVal');
+  const invert = document.getElementById('invert');
+  const grid = document.getElementById('grid');
+  const autofit = document.getElementById('autofit');
 
-  let img=null,imgMasked=null,useMasked=false;
+  let img=null,imgMasked=null,useMasked=false, inverted=false;
   let current={heading:0,pitch:0,roll:0,hasCompass:false};
   let offsets={az:0,alt:0};
   let user={scale:1,rotationExtra:0};
@@ -188,10 +148,11 @@ if ('serviceWorker' in navigator) {
   function applyUi(){ canvas.style.mixBlendMode=blend.value; canvas.style.opacity=opacity.value;
     opacityVal.textContent=(+opacity.value).toFixed(2); scaleVal.textContent=user.scale.toFixed(2)+'×';
     azVal.textContent=offsets.az.toFixed(1)+'°'; altVal.textContent=offsets.alt.toFixed(1)+'°'; }
-  blend.addEventListener('change',applyUi); opacity.addEventListener('input',applyUi);
+  [blend, opacity].forEach(el => el.addEventListener('input', applyUi));
   scale.addEventListener('input',e=>{user.scale=+e.target.value;applyUi();});
   azOffset.addEventListener('input',e=>{offsets.az=+e.target.value;applyUi();});
   altOffset.addEventListener('input',e=>{offsets.alt=+e.target.value;applyUi();});
+  [invert, grid].forEach(el=> el.addEventListener('change', ()=>{}));
   applyUi();
 
   async function startAR(){ 
@@ -239,12 +200,24 @@ if ('serviceWorker' in navigator) {
 
   function render(){ if(!running) return; resize(); ctx.clearRect(0,0,canvas.width,canvas.height);
     const im = (useMasked && imgMasked)?imgMasked:img;
-    if(im){ const w=canvas.width,h=canvas.height,size=Math.min(w,h)*user.scale,cx=w*0.5,cy=h*0.5;
+    if(im){ const w=canvas.width,h=canvas.height;
+      const size = (autofit.checked? Math.min(w,h) : Math.max(w,h)) * user.scale;
+      const cx=w*0.5, cy=h*0.5;
       ctx.save(); ctx.translate(cx,cy);
       const rollRad = (current.roll + user.rotationExtra)*Math.PI/180; ctx.rotate(rollRad);
       const pitchRad = current.pitch*Math.PI/180; const yShift=Math.sin(pitchRad)*h*0.18; const yScale=Math.cos(pitchRad)**0.5; ctx.translate(0,yShift); ctx.scale(1,yScale);
       const headRad = current.heading*Math.PI/180; ctx.rotate(-headRad);
-      ctx.drawImage(im,-size/2,-size/2,size,size); ctx.restore();
+      // Optional color inversion at draw-time using 'difference' with white
+      if (invert.checked){ ctx.save(); ctx.globalCompositeOperation='difference'; ctx.fillStyle='#fff'; ctx.fillRect(-size/2,-size/2,size,size); ctx.restore(); }
+      ctx.drawImage(im,-size/2,-size/2,size,size);
+      ctx.restore();
+    }
+    if(grid.checked){
+      const w=canvas.width,h=canvas.height;
+      ctx.save(); ctx.strokeStyle='rgba(0,200,255,.6)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(w/2,h/2, Math.min(w,h)/2.6, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+      ctx.restore();
     }
     const now=performance.now(), dt=now-lastFrame; lastFrame=now; const fps=1000/dt; fpsS=fpsS*0.9+fps*0.1; fpsEl.textContent='FPS: '+fpsS.toFixed(0);
     rafId=requestAnimationFrame(render);
@@ -271,10 +244,11 @@ if ('serviceWorker' in navigator) {
   });
 
   async function removeWhiteBackground(){ if(!img) return;
-    const off = (typeof OffscreenCanvas !== 'undefined') ? new OffscreenCanvas(img.width, img.height) : (function(){ const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; return c; })();
+    const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+    const off = (typeof OffscreenCanvas !== 'undefined') ? new OffscreenCanvas(w, h) : (function(){ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; })();
     const o = off.getContext('2d', { willReadFrequently: true });
-    o.drawImage(img,0,0);
-    const d = o.getImageData(0,0,off.width,off.height); const a=d.data;
+    o.drawImage(img,0,0,w,h);
+    const d=o.getImageData(0,0,w,h); const a=d.data;
     for(let i=0;i<a.length;i+=4){ const r=a[i],g=a[i+1],b=a[i+2]; const max=Math.max(r,g,b),min=Math.min(r,g,b); const bright=(r+g+b)/3;
       if(bright>240 && (max-min)<10) a[i+3]=0; else { a[i]=Math.max(0,r-10); a[i+1]=Math.max(0,g-10); a[i+2]=Math.max(0,b-10); a[i+3]=Math.min(255,a[i+3]+20); }
     }
@@ -282,6 +256,8 @@ if ('serviceWorker' in navigator) {
     const dataURL = off.convertToBlob ? URL.createObjectURL(await off.convertToBlob()) : off.toDataURL();
     imgMasked = await new Promise((resolve, reject) => { const el = new Image(); el.onload=()=>resolve(el); el.onerror=reject; el.src=dataURL; });
     useMasked=true;
+    // dopo sfondo rimosso, forziamo multiply (linee scure visibili)
+    blend.value='multiply'; canvas.style.mixBlendMode='multiply';
   }
   bgRemoveBtn.addEventListener('click', async()=>{ if(!img) return alert('Carica prima un’immagine.');
     if(!useMasked){ bgRemoveBtn.textContent='Elaborazione…'; await removeWhiteBackground(); bgRemoveBtn.textContent='Sfondo rimosso ✔︎'; }
