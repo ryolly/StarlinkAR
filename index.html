@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="theme-color" content="#00121f">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -10,22 +10,84 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Sky Chart AR</title>
 <style>
-  :root{--ui-bg:rgba(10,10,14,.65);--ui-border:rgba(255,255,255,.18);--ui-text:#f1f1f3;--accent:#77c1ff}
-  html,body{margin:0;height:100%;background:#000;color:var(--ui-text);font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
-  #app{position:fixed;inset:0;overflow:hidden;background:#000}
-  video#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:none;filter:saturate(1.1) contrast(1.05) brightness(1.02)}
-  canvas#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen}
-  .topbar{position:absolute;top:env(safe-area-inset-top);left:0;right:0;display:flex;gap:8px;padding:10px;justify-content:space-between;align-items:center;pointer-events:none}
-  .chip,button,select,input[type=file]{appearance:none;border:1px solid var(--ui-border);background:rgba(255,255,255,.05);color:var(--ui-text);border-radius:12px;padding:8px 10px;font:inherit}
-  .chip{pointer-events:auto;font-size:12px}
-  button.primary{border-color:rgba(119,193,255,.35);background:linear-gradient(180deg,rgba(119,193,255,.6),rgba(119,193,255,.2));color:#00121f;font-weight:600}
-  .panel{position:absolute;left:0;right:0;bottom:env(safe-area-inset-bottom);padding:12px 10px calc(12px + env(safe-area-inset-bottom));display:grid;gap:8px;background:linear-gradient(180deg,rgba(0,0,0,0) 0,rgba(0,0,0,.3) 30%,rgba(0,0,0,.5) 100%)}
-  .card{border:1px solid var(--ui-border);border-radius:12px;background:var(--ui-bg);padding:10px;backdrop-filter:blur(6px)}
-  .row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin:6px 0}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .muted{opacity:.7;font-size:12px}
-  .hint{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:#d8eaff;text-shadow:0 1px 8px rgba(0,0,0,.55)}
-  .hint .box{max-width:560px;border:1px solid rgba(255,255,255,.35);background:rgba(14,22,28,.45);padding:12px 14px;border-radius:12px;backdrop-filter:blur(3px)}
+  :root{
+    --ui-bg: rgba(10,10,14,.65);
+    --ui-border: rgba(255,255,255,.18);
+    --ui-text: #f1f1f3;
+    --accent: #77c1ff;
+    --vh: 1vh; /* set via JS to fix iOS toolbar */
+    --pad-x: max(10px, env(safe-area-inset-left));
+    --pad-y: max(10px, env(safe-area-inset-top));
+    --pad-r: max(10px, env(safe-area-inset-right));
+    --pad-b: max(12px, env(safe-area-inset-bottom));
+  }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background:#000;
+    color: var(--ui-text);
+    font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  #app {
+    position: fixed;
+    inset: 0;
+    height: calc(var(--vh) * 100);
+    overflow: hidden;
+    background:#000;
+  }
+  video#cam { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  canvas#overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; image-rendering: auto; mix-blend-mode: screen; z-index: 1; }
+  .topbar {
+    position: absolute;
+    top: var(--pad-y);
+    left: var(--pad-x);
+    right: var(--pad-r);
+    display: flex; gap: 8px; align-items: center; justify-content: space-between;
+    z-index: 3; pointer-events: none;
+  }
+  .chip, button, select, input[type="file"] {
+    appearance: none; border: 1px solid var(--ui-border);
+    background: rgba(255,255,255,.06); color: var(--ui-text);
+    border-radius: 12px; padding: 8px 10px; font: inherit;
+  }
+  .chip { pointer-events: auto; font-size: 12px; }
+  button.primary { border-color: rgba(119,193,255,.35);
+    background: linear-gradient(180deg, rgba(119,193,255,.6), rgba(119,193,255,.2)); color: #00121f; font-weight: 600; }
+  button { cursor: pointer; }
+  .panel {
+    position: absolute; left: var(--pad-x); right: var(--pad-r);
+    bottom: var(--pad-b);
+    z-index: 4;
+    padding-bottom: 0;
+  }
+  .card {
+    border: 1px solid var(--ui-border); border-radius: 12px;
+    background: var(--ui-bg);
+    backdrop-filter: blur(6px);
+    padding: 10px;
+    max-height: min(50vh, 400px);
+    overflow: auto;
+    transform: translateZ(0);
+  }
+  .row { display: grid; grid-template-columns: 1fr; gap: 8px; align-items: center; margin: 6px 0; }
+  .row.inline { grid-template-columns: auto 1fr auto; }
+  .grid2 { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .muted { opacity: .7; font-size: 12px; }
+  .hint {
+    position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none;
+    padding: 16px; color: #d8eaff; text-shadow: 0 1px 8px rgba(0,0,0,.55); z-index: 2;
+  }
+  .hint .box { max-width: 560px; border: 1px solid rgba(255,255,255,.35); background: rgba(14,22,28,.45);
+    padding: 10px 12px; border-radius: 12px; backdrop-filter: blur(3px); }
+  @media (min-width: 500px) {
+    .row.inline { grid-template-columns: auto 1fr auto; }
+    .grid2 { grid-template-columns: 1fr 1fr; }
+    .card { max-height: 52vh; }
+  }
 </style>
 </head>
 <body>
@@ -43,18 +105,17 @@
     <div class="box">
       <h3 style="margin:6px 0 8px 0">Sky Chart AR</h3>
       <div style="opacity:.95">
-        Carica un <b>cielogramma</b> (immagine all-sky) e premi <b>Avvia AR</b>.<br>
-        Su iPhone funziona perfettamente via <b>GitHub Pages</b> (https). Concedi permessi camera e sensori quando richiesto.
+        Carica un <b>cielogramma</b> (immagine all-sky) e premi <b>Avvia AR</b>. Su iPhone usa HTTPS (GitHub Pages).
       </div>
       <div class="muted" style="margin-top:8px">
-        Suggerimenti: “Rimuovi fondo bianco” evidenzia stelle e la freccia della traiettoria. “Fissa allineamento” calibra azimut/altitudine.
+        “Rimuovi fondo bianco” evidenzia stelle e la freccia della traiettoria. “Fissa allineamento” calibra.
       </div>
     </div>
   </div>
 
   <div class="panel">
     <div class="card">
-      <div class="row">
+      <div class="row inline">
         <label for="file">Cielogramma</label>
         <input type="file" id="file" accept="image/*">
         <button id="loadSample">Usa esempio</button>
@@ -69,28 +130,31 @@
           <option value="darken">Fusione: Darken</option>
         </select>
       </div>
-      <div class="row">
+      <div class="row inline">
         <label>Opacità</label><input type="range" id="opacity" min="0" max="1" step="0.01" value="0.85"><div id="opacityVal">0.85</div>
       </div>
-      <div class="row">
+      <div class="row inline">
         <label>Scala</label><input type="range" id="scale" min="0.6" max="1.8" step="0.01" value="1"><div id="scaleVal">1.00×</div>
       </div>
-      <div class="row">
+      <div class="row inline">
         <label>Offset azimut</label><input type="range" id="azOffset" min="-180" max="180" step="0.1" value="0"><div id="azVal">0.0°</div>
       </div>
-      <div class="row">
+      <div class="row inline">
         <label>Offset altitudine</label><input type="range" id="altOffset" min="-45" max="45" step="0.1" value="0"><div id="altVal">0.0°</div>
       </div>
       <div class="grid2">
         <button id="fixHere">Fissa allineamento</button>
         <button id="reset">Reset</button>
       </div>
-      <div class="muted">Pinch per zoom • due dita per rotazione fine • premi “D” (da desktop) per debug sensori.</div>
+      <div class="muted">Pinch per zoom • due dita per rotazione fine • con Safari la UI è ottimizzata per non uscire dallo schermo.</div>
     </div>
   </div>
 </div>
 
 <script>
+function setVh(){ document.documentElement.style.setProperty('--vh', (window.innerHeight*0.01)+'px'); }
+window.addEventListener('resize', setVh); setVh();
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
 }
@@ -120,6 +184,7 @@ if ('serviceWorker' in navigator) {
 
   function resize(){ const w=canvas.clientWidth,h=canvas.clientHeight; if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h} }
   window.addEventListener('resize', resize, {passive:true}); resize();
+
   function applyUi(){ canvas.style.mixBlendMode=blend.value; canvas.style.opacity=opacity.value;
     opacityVal.textContent=(+opacity.value).toFixed(2); scaleVal.textContent=user.scale.toFixed(2)+'×';
     azVal.textContent=offsets.az.toFixed(1)+'°'; altVal.textContent=offsets.alt.toFixed(1)+'°'; }
@@ -185,19 +250,37 @@ if ('serviceWorker' in navigator) {
     rafId=requestAnimationFrame(render);
   }
 
-  function blobToDataURL(blob){return new Promise(res=>{const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob);})}
-  async function readFile(f){ const dataUrl = await blobToDataURL(f); const bmp = await createImageBitmap(await (await fetch(dataUrl)).blob()); img=bmp; useMasked=false; imgMasked=null; bgRemoveBtn.textContent='Rimuovi fondo bianco'; hint.style.display='none'; }
-  file.addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(f) await readFile(f); });
-  loadSample.addEventListener('click', async()=>{ const bmp = await createImageBitmap(await (await fetch('sample-skychart.jpg')).blob()); img=bmp; useMasked=false; imgMasked=null; hint.style.display='none'; });
+  // Image loading compatible with iOS Safari
+  function loadImageFromBlob(blob){
+    return new Promise((resolve, reject) => {
+      const imgEl = new Image();
+      imgEl.onload = () => resolve(imgEl);
+      imgEl.onerror = reject;
+      imgEl.src = URL.createObjectURL(blob);
+    });
+  }
+  file.addEventListener('change', async e=>{
+    const f=e.target.files?.[0]; if(!f) return;
+    const image = await loadImageFromBlob(f);
+    img=image; useMasked=false; imgMasked=null; bgRemoveBtn.textContent='Rimuovi fondo bianco'; hint.style.display='none';
+  });
+  loadSample.addEventListener('click', async()=>{
+    const resp = await fetch('sample-skychart.jpg'); const blob = await resp.blob();
+    const image = await loadImageFromBlob(blob);
+    img=image; useMasked=false; imgMasked=null; hint.style.display='none';
+  });
 
   async function removeWhiteBackground(){ if(!img) return;
-    const off=new OffscreenCanvas(img.width,img.height); const o=off.getContext('2d',{willReadFrequently:true});
-    o.drawImage(img,0,0); const d=o.getImageData(0,0,off.width,off.height); const a=d.data;
+    const off = (typeof OffscreenCanvas !== 'undefined') ? new OffscreenCanvas(img.width, img.height) : (function(){ const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; return c; })();
+    const o = off.getContext('2d', { willReadFrequently: true });
+    o.drawImage(img,0,0);
+    const d = o.getImageData(0,0,off.width,off.height); const a=d.data;
     for(let i=0;i<a.length;i+=4){ const r=a[i],g=a[i+1],b=a[i+2]; const max=Math.max(r,g,b),min=Math.min(r,g,b); const bright=(r+g+b)/3;
       if(bright>240 && (max-min)<10) a[i+3]=0; else { a[i]=Math.max(0,r-10); a[i+1]=Math.max(0,g-10); a[i+2]=Math.max(0,b-10); a[i+3]=Math.min(255,a[i+3]+20); }
     }
     o.putImageData(d,0,0);
-    imgMasked = await createImageBitmap(off.transferToImageBitmap? off.transferToImageBitmap() : await off.convertToBlob());
+    const dataURL = off.convertToBlob ? URL.createObjectURL(await off.convertToBlob()) : off.toDataURL();
+    imgMasked = await new Promise((resolve, reject) => { const el = new Image(); el.onload=()=>resolve(el); el.onerror=reject; el.src=dataURL; });
     useMasked=true;
   }
   bgRemoveBtn.addEventListener('click', async()=>{ if(!img) return alert('Carica prima un’immagine.');
